@@ -7,6 +7,9 @@ Created on 2012-9-21
 import socket
 import string
 import sys
+import time
+from common import Counter
+from common import Sqlite
 
 class Server(object):
     
@@ -49,6 +52,7 @@ class Server(object):
             import traceback
             traceback.print_exc(file=sys.stdout)
 
+
 class AgentServer(Server):
     
     def setMaster(self,master):
@@ -60,11 +64,22 @@ class AgentServer(Server):
             self.master.execute(cmd[0],string.split(cmd[1],'#'))
         else:
             self.master.execute(cmd[0])
-            
-
 
 
 class ControlServer(Server):
-    pass
+    
+    tpsCounter = None
+    db = None
+    
+    def __init__(self, db_path):
+        self.db = Sqlite.DbPorxy.getInstance(db_path)
+        self.tpsCounter = Counter.PerSecondCounter(self.tpsCallback)
+            
+    def tpsCallback(self,counter_dict):
+        sqlList = []
+        for key in counter_dict.keys():
+            sqlList.append("insert into TranPerSecond values('%s',%s,%s)"%(key,time.time(),counter_dict.get(key)))
+        self.db.executeSqlBatch(sqlList)
 
-
+    def msgReceiveHandler(self, msg):
+        print 'msgReceiveHandler:',msg

@@ -1,4 +1,4 @@
-'''
+﻿'''
 Created on 2012-9-18
 
 @author: jun
@@ -6,15 +6,14 @@ Created on 2012-9-18
 
 import sqlite3
 import random
-import point
 import string
+import os
 
 class Sqlite(object):
     
     #def __init__(self):
     
     initDbSql = '''
-        CREATE TABLE stocks (date text, trans text, symbol text, qty real, price real);
         CREATE TABLE TranPerSecond(TranName TEXT, Time LONG, Value REAL);
         CREATE TABLE Summary(TranName TEXT, Time LONG, Pass INTEGER, Fail INTEGER);
         CREATE TABLE ResponseTime(TranName TEXT, Time LONG, Value REAL);
@@ -24,17 +23,23 @@ class Sqlite(object):
     con = None
     cur = None
     
-    def initDB(self):
+    """
+    初始化数据库，创建相关的表
+    """
+    def initDB(self,path):
         #self.con = sqlite3.connect(":memory:")
-        self.con = sqlite3.connect("d:\example.db")
+        self.con = sqlite3.connect(path)
         self.cur = self.con.cursor()
         self.cur.executescript(self.initDbSql)
         
-    def emptyDB(self):
+    def emptyDB(self,path):
         pass
         
-    def connect(self):
-        self.con = sqlite3.connect("d:\example.db")
+    def connect(self,path):
+        if os.path.exists(path) == False:
+            self.initDB(path)
+            return
+        self.con = sqlite3.connect(path)
         self.cur = self.con.cursor()
     
     def initTestData(self):
@@ -68,32 +73,78 @@ class Sqlite(object):
     def executeSql(self,sql):
         return self.cur.execute(sql)
 
+    def executeSqlBatch(self,sqlList):
+        for sql in sqlList:
+            self.cur.execute(sql)
+        self.con.commit()   
+
+class Point():
+    pass
 
 class DbPorxy(object):
     
     db = Sqlite()
+    instance = None
+    path = None
     
-    def __init__(self):
-        print 'DbPorxy init,connect db.'
-        self.db.connect()
+    def __init__(self,path):
+        print 'DbPorxy init,connect db.', path
+        DbPorxy.path = path
+        self.db.connect(path)
+        
+    def executeSql(self,sql):
+        return self.db.executeSql(sql)
     
-    def executeSqlToJson(self,sql):
-        points = {}
-        for row in self.db.executeSql(sql):
-            points[row[1]] = points.get(row[1],point.Point()).setValue(row[2])
+    def executeSqlBatch(self,sqlList):
+        self.db.executeSqlBatch(sqlList)
+    
+    """
+    [{Time:0,Value:0.8},{Time:1,Value:0.98}]
+    """
+    def getResponseTimeToJson(self, tran_name, limit, min_time=0, max_time=0):
+        sql = None
+        if min_time == max_time and max_time == 0:
+            sql = "select Time,Value from ResponseTime where TranName = '%s' limit %s" % (tran_name, limit)
+        else:
+            sql = "select Time,Value from ResponseTime where TranName = '%s' and Time >= %s and Time <= %s limit %s" % (tran_name, min_time, max_time, limit)
         
         tmpList = []
-        for key in points.keys():
-            tmpList.append('{Time:%s,%s}' % (key,string.join(points.get(key).vlist,',')))
+        for row in self.executeSql(sql):
+            tmpList.append('{Time:%s,Value:%s}' % (row[0], row[1]))   
         return '[%s]' % string.join(tmpList,',')
-
-
-
-
-
+    
+    """
+    [{Time:0,Value:0.8},{Time:1,Value:0.98}]
+    """
+    def getTranPerSecondToJson(self, tran_name, limit, min_time=0, max_time=0):
+        sql = None
+        if min_time == max_time and max_time == 0:
+            sql = "select Time,Value from TranPerSecond where TranName = '%s' limit %s" % (tran_name, limit)
+        else:
+            sql = "select Time,Value from TranPerSecond where TranName = '%s' and Time >= %s and Time <= %s limit %s" % (tran_name, min_time, max_time, limit)
+        
+        tmpList = []
+        for row in self.executeSql(sql):
+            tmpList.append('{Time:%s,Value:%s}' % (row[0], row[1]))   
+        return '[%s]' % string.join(tmpList,',')
+        
+    @staticmethod
+    def getInstance(path):
+        if DbPorxy.instance != None and DbPorxy.path != path:
+            print  DbPorxy.path,path
+            raise Exception('DbPorxy.path != path')
+        if DbPorxy.instance == None:
+            DbPorxy.instance = DbPorxy(path)
+        print 'getInstance:',path
+        return DbPorxy.instance
 
 
 if __name__ == '__main__':
+    db = DbPorxy.getInstance("d:\example.db")
+    db = DbPorxy.getInstance("d:\example.db")
+    for row in db.executeSqlToJson('select * from ResponseTime limit 10'):
+        print row
+    print db.getResponseTimeToJson('Reg1',100)
 #    sqlite = Sqlite()
 #    sqlite.initDB()
 #    sqlite.connect()
@@ -104,8 +155,8 @@ if __name__ == '__main__':
 #    print sqlite.cur.fetchone()[0]
 
 
-    db = DbPorxy()
-    print db.executeSqlToJson("SELECT * FROM ResponseTime WHERE TranName = 'Reg4' limit 2000")
+#    db = DbPorxy()
+#    print db.executeSqlToJson("SELECT * FROM ResponseTime WHERE TranName = 'Reg4' limit 2000")
 
 
 #    points = {}

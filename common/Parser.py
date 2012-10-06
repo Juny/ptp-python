@@ -3,23 +3,46 @@ Created on 2012-9-23
 
 @author: jun
 '''
-import string
+import threading
+import thread
 
 class Parser(object):
     
-    #MessageReceiveHandler
     onMessageReceive = None
+    buffer = ""
+    conditionLock = threading.Condition()
+    waiting = True
     
-    def parse(self):
-        pass
+    def __init__(self):
+        thread.start_new_thread(self.tryToParse,())
+    
+    def parse(self, data):
+        self.conditionLock.acquire()
+        self.buffer = "%s%s"%(self.buffer,data)
+        if self.waiting:
+            self.conditionLock.notify()
+        self.conditionLock.release()
+    
+    def tryToParse(self):
+        while 1:
+            print 'in tryToParse.'
+            self.conditionLock.acquire()
+            index = self.buffer.find("\n")
+            if index == -1:
+                self.waiting = True
+                self.conditionLock.wait()
+                self.isParsing = False
+                self.conditionLock.release()
+                continue                
+            line = self.buffer[0:index+1]
+            self.buffer = self.buffer[index+1:len(self.buffer)]
+            print 'line:',line
+            print 'self.buffer:',self.buffer
+            self.conditionLock.release()
+            self.onMessageReceive(line)
     
 class CmdParser(Parser):
-    def parse(self, data):
-        print 'in parser.%s' % data
-        for s in string.split(data,'###'):
-            if s == '':
-                continue
-            self.onMessageReceive(s)
+    pass
 
 class TransDataParser(Parser):
     pass

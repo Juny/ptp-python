@@ -46,7 +46,7 @@ class PerSecondCounter(Counter):
             tmpdict = self.counterDict
             self.counterDict = {}
             self.dictLock.release()
-            if self.callback != None:
+            if len(tmpdict) > 0 and self.callback != None:
                 self.callback(tmpdict)
             time.sleep(1)
             
