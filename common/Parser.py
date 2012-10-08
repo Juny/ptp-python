@@ -34,10 +34,8 @@ class Parser(object):
                 self.isParsing = False
                 self.conditionLock.release()
                 continue                
-            line = self.buffer[0:index+1]
+            line = self.buffer[0:index]
             self.buffer = self.buffer[index+1:len(self.buffer)]
-            print 'line:',line
-            print 'self.buffer:',self.buffer
             self.conditionLock.release()
             self.onMessageReceive(line)
     
