@@ -102,22 +102,22 @@ class DbPorxy(object):
     """
     [{Time:0,Value:0.8},{Time:1,Value:0.98}]
     """
-    def getResponseTimeToJson(self, tran_name, limit, min_time=0, max_time=0):
+    def getResponseTimeWithJson(self, tran_name, limit, min_time=0, max_time=0):
         sql = None
         if min_time == max_time and max_time == 0:
-            sql = "select Time,Value from ResponseTime where TranName = '%s' limit %s" % (tran_name, limit)
+            sql = "select datetime(Time,'unixepoch'),Duration from Trans where TranName = '%s' limit %s" % (tran_name, limit)
         else:
-            sql = "select Time,Value from ResponseTime where TranName = '%s' and Time >= %s and Time <= %s limit %s" % (tran_name, min_time, max_time, limit)
+            sql = "select datetime(Time,'unixepoch'),Duration from Trans where TranName = '%s' and Time >= %s and Time <= %s limit %s" % (tran_name, min_time, max_time, limit)
         
         tmpList = []
         for row in self.executeSql(sql):
-            tmpList.append('{Time:%s,Value:%s}' % (row[0], row[1]))   
+            tmpList.append("{Time:'%s',Value:%s}" % (row[0], row[1]))   
         return '[%s]' % string.join(tmpList,',')
     
     """
     [{Time:0,Value:0.8},{Time:1,Value:0.98}]
     """
-    def getTranPerSecondToJson(self, tran_name, limit, min_time=0, max_time=0):
+    def getTranPerSecondWithJson(self, tran_name, limit, min_time=0, max_time=0):
         sql = None
         if min_time == max_time and max_time == 0:
             sql = "select Time,Value from TranPerSecond where TranName = '%s' limit %s" % (tran_name, limit)
@@ -142,9 +142,17 @@ class DbPorxy(object):
 
 if __name__ == '__main__':
     db = DbPorxy.getInstance("d:\TestByGJY.db")
+    for row in db.executeSql("select time(),date(),strftime('%Y-%M-%d %H:%m:%f'),datetime('now','localtime'),datetime(1349677432,'unixepoch'),strftime('%s','now')"):
+        print row
+    for row in db.executeSql('select count(*) from Trans'):
+        print row  
+    for row in db.executeSql('select count(*) from TranPerSecond'):
+        print row  
     for row in db.executeSql('select * from Trans limit 10'):
         print row
-#    print db.getResponseTimeToJson('Reg1',100)
+    for row in db.executeSql('select * from TranPerSecond limit 10'):
+        print row
+    print db.getResponseTimeWithJson('Test1',100)
 #    sqlite = Sqlite()
 #    sqlite.initDB()
 #    sqlite.connect()

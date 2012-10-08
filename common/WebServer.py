@@ -63,14 +63,16 @@ class PTPRequestHandler(BaseHTTPRequestHandler):
     
     def getTransRspTime(self):
         self.send_response(200)
+        #http://localhost:8089/TransRspTime.do?_dc=1349709497594&page=1&start=0&limit=25&callback=Ext.data.JsonP.callback1
         if '?' in self.path:
             self.send_header('content-type', 'text/javascript')
             self.end_headers()
-            self.wfile.write('Ext.data.JsonP.callback1(%s)' % self.db.executeSqlToJson("SELECT * FROM ResponseTime WHERE TranName = 'Reg3' limit 120"))
+            callback = self.path.split('=')[-1]
+            self.wfile.write('%s(%s)' % (callback,self.db.getResponseTimeWithJson('Test1',10)))
         else:
             self.send_header('content-type', 'application/x-json')
             self.end_headers()
-            self.wfile.write(self.db.executeSqlToJson("SELECT * FROM ResponseTime WHERE TranName = 'Reg1' limit 2000"))
+            self.wfile.write(self.db.getResponseTimeWithJson('Test1',100))
 
             
 class PtpHttpServer(HTTPServer):
@@ -83,7 +85,7 @@ class PtpHttpServer(HTTPServer):
 
 if __name__ == '__main__':
     server_address = ('', 8089)
-    httpd = PtpHttpServer(server_address, PTPRequestHandler, 'Test Path')
+    httpd = PtpHttpServer(server_address, PTPRequestHandler, "d:\TestByGJY.db")
     httpd.serve_forever()
 
     

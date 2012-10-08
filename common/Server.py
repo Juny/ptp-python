@@ -79,7 +79,7 @@ class ControlServer(Server):
     def tpsCallback(self,counter_dict):
         sqlList = []
         for key in counter_dict.keys():
-            sqlList.append("insert into TranPerSecond values('%s',%s,%s)"%(key,time.time(),counter_dict.get(key)))
+            sqlList.append("insert into TranPerSecond values(%s,'%s',%s)"%("strftime('%s','now')",key,counter_dict.get(key)))
         self.db.executeSqlBatch(sqlList)
 
     """
@@ -97,7 +97,7 @@ class ControlServer(Server):
             p = re.compile(r"{'(.*?)':(.*?),'(.*?)':(.*?)}")
             for value in p.findall(msgValues):
                 self.tpsCounter.increase(value[0])
-                sqlList.append("insert into Trans(Time, TranName, Duration, Status) values(%s,'%s',%s,%s)"%(msgTime, value[0], value[1], value[3]))
+                sqlList.append("insert into Trans(Time, TranName, Duration, Status) values(%s,'%s',%s,%s)"%("strftime('%s','now')", value[0], value[1], value[3]))
         self.db.executeSqlBatch(sqlList)
         
 
