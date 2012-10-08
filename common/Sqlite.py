@@ -14,10 +14,11 @@ class Sqlite(object):
     #def __init__(self):
     
     initDbSql = '''
-        CREATE TABLE TranPerSecond(TranName TEXT, Time LONG, Value REAL);
-        CREATE TABLE Summary(TranName TEXT, Time LONG, Pass INTEGER, Fail INTEGER);
-        CREATE TABLE ResponseTime(TranName TEXT, Time LONG, Value REAL);
-        CREATE TABLE SystemResources(ResourcesName TEXT, Time LONG, Value REAL);
+        CREATE TABLE TranPerSecond(Time LONG, TranName TEXT, Value REAL);
+        CREATE TABLE Summary(Time LONG, TranName TEXT, Pass INTEGER, Fail INTEGER);
+        CREATE TABLE ResponseTime(Time LONG, TranName TEXT, Value REAL);
+        CREATE TABLE SystemResources(Time LONG, ResourcesName TEXT, Value REAL);
+        CREATE TABLE Trans(Time LONG, TranName TEXT, Duration REAL, Status INTEGER);
         '''
     
     con = None
@@ -28,7 +29,7 @@ class Sqlite(object):
     """
     def initDB(self,path):
         #self.con = sqlite3.connect(":memory:")
-        self.con = sqlite3.connect(path)
+        self.con = sqlite3.connect(path, check_same_thread = False)
         self.cur = self.con.cursor()
         self.cur.executescript(self.initDbSql)
         
@@ -39,7 +40,7 @@ class Sqlite(object):
         if os.path.exists(path) == False:
             self.initDB(path)
             return
-        self.con = sqlite3.connect(path)
+        self.con = sqlite3.connect(path, check_same_thread = False)
         self.cur = self.con.cursor()
     
     def initTestData(self):
@@ -140,11 +141,10 @@ class DbPorxy(object):
 
 
 if __name__ == '__main__':
-    db = DbPorxy.getInstance("d:\example.db")
-    db = DbPorxy.getInstance("d:\example.db")
-    for row in db.executeSqlToJson('select * from ResponseTime limit 10'):
+    db = DbPorxy.getInstance("d:\TestByGJY.db")
+    for row in db.executeSql('select * from Trans limit 10'):
         print row
-    print db.getResponseTimeToJson('Reg1',100)
+#    print db.getResponseTimeToJson('Reg1',100)
 #    sqlite = Sqlite()
 #    sqlite.initDB()
 #    sqlite.connect()
@@ -154,33 +154,8 @@ if __name__ == '__main__':
 #    sqlite.cur.execute("SELECT COUNT(*) as 'c' FROM TranPerSecond ORDER BY Value")
 #    print sqlite.cur.fetchone()[0]
 
-
 #    db = DbPorxy()
 #    print db.executeSqlToJson("SELECT * FROM ResponseTime WHERE TranName = 'Reg4' limit 2000")
-
-
-#    points = {}
-#    tName = ['Reg1','Reg2','Reg3','Reg4','Reg5']
-#    index = 0
-#    for t in tName:
-#        print t
-#        for row in sqlite.cur.execute("SELECT * FROM ResponseTime WHERE TranName = '%s' limit 2" % (t)):
-#            print row
-#            #print '{Time:%d,Value:%3.3f}'%(row[1],row[2])
-#            points[row[1]] = points.get(row[1],point.Point()).setValue(row[2])
-#        index+=1
-#        
-#    print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-#
-#    tmpList = []    
-#    for key in points.keys():
-#        tmpList.append('{Time:%s,%s}' % (key,string.join(points.get(key).vlist,',')))
-#    print '[%s]' % string.join(tmpList,',')
-
-
-
-
-
 
 
 
