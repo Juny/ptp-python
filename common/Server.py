@@ -1,4 +1,4 @@
-'''
+﻿'''
 Created on 2012-9-21
 
 @author: jun
@@ -8,6 +8,7 @@ import socket
 import string
 import sys
 import time
+import re
 from common import Counter
 from common import Sqlite
 
@@ -38,7 +39,7 @@ class Server(object):
                 connection, address = serverSocket.accept() 
                 print('Server connected by', address) 
                 while True:
-                    data = connection.recv(256)
+                    data = connection.recv(512)
                     if not data:
                         print('no data.')
                         break 
@@ -47,7 +48,7 @@ class Server(object):
                     connection.send('ok.')
                 connection.close()
         except Exception:
-            #connection.send('error.' + 'Exception..' + e)
+            print 'Server Stop.'
             connection.close()
             import traceback
             traceback.print_exc(file=sys.stdout)
@@ -81,5 +82,22 @@ class ControlServer(Server):
             sqlList.append("insert into TranPerSecond values('%s',%s,%s)"%(key,time.time(),counter_dict.get(key)))
         self.db.executeSqlBatch(sqlList)
 
+    """
+    "{'Type':'Transaction','Time':0,'Value':[{'Test1':0.2,'status':0},{'Test2':0.5,'status':0}]}"
+    """
     def msgReceiveHandler(self, msg):
-        print 'msgReceiveHandler:',msg
+        pattern = re.compile(r"{'Type':'(.*?)','Time':(.*?),'Value':[[](.*)]}")
+        match = pattern.match(msg)
+        #type,time,value:match.group(1),match.group(2),match.group(3)
+        msgType = match.group(1)
+        msgTime = match.group(2)
+        msgValues = match.group(3)
+        sqlList = []
+        if msgType == 'Transaction':
+            p = re.compile(r"{'(.*?)':(.*?),'(.*?)':(.*?)}")
+            for value in p.findall(msgValues):
+                self.tpsCounter.increase(value[0])
+                sqlList.append("insert into Trans(Time, TranName, Duration, Status) values(%s,'%s',%s,%s)"%(msgTime, value[0], value[1], value[3]))
+        self.db.executeSqlBatch(sqlList)
+        
+
