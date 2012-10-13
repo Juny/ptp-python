@@ -7,7 +7,7 @@ Created on 2012-9-21
 import socket
 import string
 import sys
-import time
+#import time
 import re
 from common import Counter
 from common import Sqlite
@@ -90,7 +90,7 @@ class ControlServer(Server):
         match = pattern.match(msg)
         #type,time,value:match.group(1),match.group(2),match.group(3)
         msgType = match.group(1)
-        msgTime = match.group(2)
+        #msgTime = match.group(2)
         msgValues = match.group(3)
         sqlList = []
         if msgType == 'Transaction':

@@ -120,14 +120,38 @@ class DbPorxy(object):
     def getTranPerSecondWithJson(self, tran_name, limit, min_time=0, max_time=0):
         sql = None
         if min_time == max_time and max_time == 0:
-            sql = "select Time,Value from TranPerSecond where TranName = '%s' limit %s" % (tran_name, limit)
+            sql = "select datetime(Time,'unixepoch'),Value from TranPerSecond where TranName = '%s' limit %s" % (tran_name, limit)
         else:
-            sql = "select Time,Value from TranPerSecond where TranName = '%s' and Time >= %s and Time <= %s limit %s" % (tran_name, min_time, max_time, limit)
+            sql = "select datetime(Time,'unixepoch'),Value from TranPerSecond where TranName = '%s' and Time >= %s and Time <= %s limit %s" % (tran_name, min_time, max_time, limit)
         
         tmpList = []
         for row in self.executeSql(sql):
-            tmpList.append('{Time:%s,Value:%s}' % (row[0], row[1]))   
+            tmpList.append("{Time:'%s',Value:%s}" % (row[0], row[1]))   
         return '[%s]' % string.join(tmpList,',')
+
+    """
+    [{TranName:0,Max:0.8,Avg:0.8},{TranName:0,Max:0.8,Avg:0.8}]
+    """        
+    def getTranSummary(self,summary_type):
+        if summary_type == 'tps':
+            tableName = 'TranPerSecond'
+        else:
+            tableName = 'ResponseTime'
+            
+        transName = []
+        sql = 'select distinct TranName from %s'%tableName
+        for row in self.executeSql(sql):
+            transName.append(row[0])
+        print transName
+        
+        summary = []
+        for tran in transName:
+            sql = "select TranName,max(Value),min(Value),avg(Value),0 from %s where TranName = '%s'"%(tableName,tran)
+            row = self.executeSql(sql).fetchone()
+            print row
+            summary.append("{TranName:'%s',Max:%s,Min:%s,Avg:%s,Last:%s}"%row)
+        print summary
+        return '[%s]' % string.join(summary,',')
         
     @staticmethod
     def getInstance(path):
@@ -142,17 +166,24 @@ class DbPorxy(object):
 
 if __name__ == '__main__':
     db = DbPorxy.getInstance("d:\TestByGJY.db")
-    for row in db.executeSql("select time(),date(),strftime('%Y-%M-%d %H:%m:%f'),datetime('now','localtime'),datetime(1349677432,'unixepoch'),strftime('%s','now')"):
-        print row
-    for row in db.executeSql('select count(*) from Trans'):
-        print row  
-    for row in db.executeSql('select count(*) from TranPerSecond'):
-        print row  
-    for row in db.executeSql('select * from Trans limit 10'):
-        print row
-    for row in db.executeSql('select * from TranPerSecond limit 10'):
-        print row
-    print db.getResponseTimeWithJson('Test1',100)
+#    for row in db.executeSql("select time(),date(),strftime('%Y-%M-%d %H:%m:%f'),datetime('now','localtime'),datetime(1349677432,'unixepoch'),strftime('%s','now')"):
+#        print row
+#    for row in db.executeSql('select count(*) from Trans'):
+#        print row  
+#    for row in db.executeSql('select count(*) from TranPerSecond'):
+#        print row  
+#    for row in db.executeSql("select TranName,max(Value),min(Value),avg(Value),0 from %s where TranName = '%s'"%('TranPerSecond','Test1')):
+#        print row
+#    for row in db.executeSql('select * from TranPerSecond limit 10'):
+#        print row
+#    for row in db.executeSql('select * from ResponseTime'):
+#        print row        
+#    for row in db.executeSql("select avg(Value),max(Value) from TranPerSecond where TranName = 'Test1'"):
+#        print row    
+        
+    db.getTranSummary('tps')
+         
+#    print db.getResponseTimeWithJson('Test1',100)
 #    sqlite = Sqlite()
 #    sqlite.initDB()
 #    sqlite.connect()
