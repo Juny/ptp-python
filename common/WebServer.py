@@ -80,7 +80,7 @@ class PTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header('content-type', 'text/javascript')
         self.end_headers()
         callback = self.path.split('=')[-1]
-        self.wfile.write('%s(%s)' % (callback,self.db.getTranSummary('ResponseTime')))
+        self.wfile.write('%s(%s)' % (callback,self.db.getTranRpsSummary()))
       
     def getTransTps(self):
         self.send_response(200)
@@ -97,16 +97,17 @@ class PTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header('content-type', 'text/javascript')
         self.end_headers()
         callback = self.path.split('=')[-1]
-        self.wfile.write('%s(%s)' % (callback,self.db.getTranSummary('tps')))
+        self.wfile.write('%s(%s)' % (callback,self.db.getTranTpsSummary()))
 
             
 class PtpHttpServer(HTTPServer):
     db_path = None
+    control = None
     
-    def __init__(self, server_address, RequestHandlerClass, db_path):
+    def __init__(self, server_address, RequestHandlerClass, db_path, control):
         HTTPServer.__init__(self, server_address, RequestHandlerClass)
         self.db_path = db_path
-
+        self.control = control
 
 if __name__ == '__main__':
     server_address = ('', 8089)

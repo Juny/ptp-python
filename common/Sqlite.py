@@ -15,12 +15,12 @@ class Sqlite(object):
     
     initDbSql = '''
         CREATE TABLE TranPerSecond(Time LONG, TranName TEXT, Value REAL);
-        CREATE TABLE Summary(Time LONG, TranName TEXT, Pass INTEGER, Fail INTEGER);
         CREATE TABLE ResponseTime(Time LONG, TranName TEXT, Value REAL);
+        CREATE TABLE Summary(Time LONG, TranName TEXT, Pass INTEGER, Fail INTEGER);
         CREATE TABLE SystemResources(Time LONG, ResourcesName TEXT, Value REAL);
-        CREATE TABLE Trans(Time LONG, TranName TEXT, Duration REAL, Status INTEGER);
         '''
-    
+        #CREATE TABLE Trans(Time LONG, TranName TEXT, Duration REAL, Status INTEGER);
+            
     con = None
     cur = None
     
@@ -60,11 +60,11 @@ class Sqlite(object):
                 #r = random.uniform(0,100)
                 #self.cur.execute("INSERT INTO TranPerSecond VALUES ('reg1','100',100.0)")
                 #self.cur.execute("INSERT INTO ResponseTime VALUES ('%s',%d,%f)" % (random.choice(["Reg1", "Reg2", "Reg3", "Reg4", "Reg5"]),time,r))
-                self.cur.execute("INSERT INTO ResponseTime VALUES ('%s',%d,%2.2f)" % ("Reg1",time,random.uniform(0,1)))
-                self.cur.execute("INSERT INTO ResponseTime VALUES ('%s',%d,%2.2f)" % ("Reg2",time,random.uniform(0,10)))
-                self.cur.execute("INSERT INTO ResponseTime VALUES ('%s',%d,%2.2f)" % ("Reg3",time,random.uniform(0,100)))
-                self.cur.execute("INSERT INTO ResponseTime VALUES ('%s',%d,%2.2f)" % ("Reg4",time,random.uniform(0,50)))
-                self.cur.execute("INSERT INTO ResponseTime VALUES ('%s',%d,%2.2f)" % ("Reg5",time,random.uniform(0,200)))
+                self.cur.execute("INSERT INTO Trans VALUES (%s,'%s',%2.2f,%d)" % ("strftime('%s','now')","Reg1",random.uniform(0,1),0))
+                self.cur.execute("INSERT INTO Trans VALUES (%s,'%s',%2.2f,%d)" % ("strftime('%s','now')","Reg2",random.uniform(0,10),0))
+                self.cur.execute("INSERT INTO Trans VALUES (%s,'%s',%2.2f,%d)" % ("strftime('%s','now')","Reg3",random.uniform(0,100),0))
+                self.cur.execute("INSERT INTO Trans VALUES (%s,'%s',%2.2f,%d)" % ("strftime('%s','now')","Reg4",random.uniform(0,50),0))
+                self.cur.execute("INSERT INTO Trans VALUES (%s,'%s',%2.2f,%d)" % ("strftime('%s','now')","Reg5",random.uniform(0,200),0))
                 time+=1
                 batch-=1
             self.con.commit()
@@ -132,11 +132,11 @@ class DbPorxy(object):
     """
     [{TranName:0,Max:0.8,Avg:0.8},{TranName:0,Max:0.8,Avg:0.8}]
     """        
-    def getTranSummary(self,summary_type):
-        if summary_type == 'tps':
-            tableName = 'TranPerSecond'
-        else:
-            tableName = 'ResponseTime'
+    def getTranTpsSummary(self):
+#        if summary_type == 'tps':
+        tableName = 'TranPerSecond'
+#        else:
+#            tableName = 'ResponseTime'
             
         transName = []
         sql = 'select distinct TranName from %s'%tableName
@@ -152,7 +152,23 @@ class DbPorxy(object):
             summary.append("{TranName:'%s',Max:%s,Min:%s,Avg:%s,Last:%s}"%row)
         print summary
         return '[%s]' % string.join(summary,',')
+
+    def getTranRpsSummary(self,summary_type):
+        transName = []
+        sql = 'select distinct TranName from Trans'
+        for row in self.executeSql(sql):
+            transName.append(row[0])
+        print transName
         
+        summary = []
+        for tran in transName:
+            sql = "select TranName,max(Duration),min(Duration),avg(Duration),0 from Trans where TranName = '%s'"%(tran)
+            row = self.executeSql(sql).fetchone()
+            print row
+            summary.append("{TranName:'%s',Max:%s,Min:%s,Avg:%s,Last:%s}"%row)
+        print summary
+        return '[%s]' % string.join(summary,',')
+            
     @staticmethod
     def getInstance(path):
         if DbPorxy.instance != None and DbPorxy.path != path:
@@ -165,7 +181,7 @@ class DbPorxy(object):
 
 
 if __name__ == '__main__':
-    db = DbPorxy.getInstance("d:\TestByGJY.db")
+#    db = DbPorxy.getInstance("d:\TestByGJY.db")
 #    for row in db.executeSql("select time(),date(),strftime('%Y-%M-%d %H:%m:%f'),datetime('now','localtime'),datetime(1349677432,'unixepoch'),strftime('%s','now')"):
 #        print row
 #    for row in db.executeSql('select count(*) from Trans'):
@@ -180,23 +196,32 @@ if __name__ == '__main__':
 #        print row        
 #    for row in db.executeSql("select avg(Value),max(Value) from TranPerSecond where TranName = 'Test1'"):
 #        print row    
-        
-    db.getTranSummary('tps')
-         
-#    print db.getResponseTimeWithJson('Test1',100)
+
+
+#    import time
 #    sqlite = Sqlite()
-#    sqlite.initDB()
-#    sqlite.connect()
+#    sqlite.connect("d:\Test100W.db")
 #    print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-#    sqlite.initLargeData(10000,100)
+#    sqlite.initLargeData(1000000,200)
 #    print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-#    sqlite.cur.execute("SELECT COUNT(*) as 'c' FROM TranPerSecond ORDER BY Value")
+#    sqlite.cur.execute("SELECT COUNT(*) as 'c' FROM Trans")
 #    print sqlite.cur.fetchone()[0]
 
-#    db = DbPorxy()
-#    print db.executeSqlToJson("SELECT * FROM ResponseTime WHERE TranName = 'Reg4' limit 2000")
-
-
+ 
+    import time
+    db = DbPorxy.getInstance("d:\Test100W.db")
+##    for row in db.executeSql("create index Index_Trans_Time on Trans(Time);"):
+##        print row
+##    for row in db.executeSql("create index Index_Trans_Time_TranName on Trans(Time,TranName);"):
+##        print row
+    print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+#    for row in db.executeSql("select TranName,max(Duration),min(Duration),avg(Duration),0 from Trans where TranName = 'Reg1'"):
+#        print row
+    for row in db.executeSql("select * from Trans order by Time asc limit 2"):
+        print row
+    for row in db.executeSql("select * from Trans order by Time desc limit 2"):
+        print row
+    print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
 
 #:memory:
 #2012-09-18 23:44:59
@@ -214,3 +239,17 @@ if __name__ == '__main__':
 #2012-09-18 23:54:29
 #100000
 #2012-09-18 23:54:31
+
+#----------------------500W数据----------------------
+#"d:\Test100W.db"  500W数据
+#2012-10-15 16:40:34
+#5000000
+#2012-10-15 16:42:52
+
+#没索引
+#2012-10-15 16:48:30
+#"select TranName,max(Duration),min(Duration),avg(Duration),0 from Trans where TranName = 'Reg1'"
+#2012-10-15 16:48:32
+
+
+

@@ -8,3 +8,5 @@ if __name__ == '__main__':
     controler.setParser(parser)
     controler.start(51999)
     pass
+
+# Avg Max Min Last得内存算，数据库备份
