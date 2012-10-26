@@ -1,6 +1,4 @@
 '''
-Created on 2012-9-22
-
 @author: jun
 '''
 import socket  

@@ -1,6 +1,4 @@
 ﻿'''
-Created on 2012-9-18
-
 @author: jun
 '''
 

@@ -109,6 +109,34 @@ class PtpHttpServer(HTTPServer):
         self.db_path = db_path
         self.control = control
 
+
+class TaskCenterRequestHandler(BaseHTTPRequestHandler):
+    db = None
+    processMethodDict = None
+    def __init__(self, request, client_address, server):
+        print 'PTPRequestHandler __init__'
+        self.db = Sqlite.DbPorxy.getInstance(server.db_path)
+        self.processMethodDict = {
+                             '/getTaskList': self.getTaskList,
+                             }
+        BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+                
+    def do_GET(self):
+        print 'do_GET.',self.path
+        path = self.path.split('?')[0]
+        if self.processMethodDict.has_key(path):
+            self.processMethodDict[path]()
+        else:
+            self.send_error(404)
+
+    def getTaskList(self):
+        self.send_response(200)
+        #http://localhost:8089/TransRspTime.do?_dc=1349709497594&page=1&start=0&limit=25&callback=Ext.data.JsonP.callback1
+        self.send_header('content-type', 'text/javascript')
+        self.end_headers()
+        callback = self.path.split('=')[-1]
+        self.wfile.write('%s(%s)' % (callback,self.db.getTranTpsSummary()))
+
 if __name__ == '__main__':
     server_address = ('', 8089)
     httpd = PtpHttpServer(server_address, PTPRequestHandler, "d:\TestByGJY.db")
