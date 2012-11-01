@@ -1,11 +1,13 @@
-'''
+﻿'''
 @author: jun
 '''
 from BaseHTTPServer import HTTPServer
 from BaseHTTPServer import BaseHTTPRequestHandler
 from common import Sqlite
-from urlparse import urlparse
 
+'''
+测试监控页面Handler
+'''
 class PTPRequestHandler(BaseHTTPRequestHandler):
 
     db = None
@@ -109,12 +111,14 @@ class PtpHttpServer(HTTPServer):
         self.db_path = db_path
         self.control = control
 
-
+'''
+任务页面Handler
+'''
 class TaskCenterRequestHandler(BaseHTTPRequestHandler):
     db = None
     processMethodDict = None
     def __init__(self, request, client_address, server):
-        print 'PTPRequestHandler __init__'
+        print 'TaskCenterRequestHandler __init__'
         self.db = Sqlite.DbPorxy.getInstance(server.db_path)
         self.processMethodDict = {
                              '/getTaskList': self.getTaskList,
@@ -137,9 +141,14 @@ class TaskCenterRequestHandler(BaseHTTPRequestHandler):
         callback = self.path.split('=')[-1]
         self.wfile.write('%s(%s)' % (callback,self.db.getTranTpsSummary()))
 
+def startTaskCenterServer(db_path, port=8089):
+    server_address = ('', port)
+    httpd = PtpHttpServer(server_address, TaskCenterRequestHandler, db_path , None)
+    httpd.serve_forever()
+    
 if __name__ == '__main__':
     server_address = ('', 8089)
-    httpd = PtpHttpServer(server_address, PTPRequestHandler, "d:\TestByGJY.db")
+    httpd = PtpHttpServer(server_address, PTPRequestHandler, "d:\TestByGJY.db" , None)
     httpd.serve_forever()
 
     

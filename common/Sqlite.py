@@ -22,24 +22,15 @@ class Sqlite(object):
     con = None
     cur = None
     
-    """
-    初始化数据库，创建相关的表
-    """
-    def initDB(self,path):
-        #self.con = sqlite3.connect(":memory:")
-        self.con = sqlite3.connect(path, check_same_thread = False)
-        self.cur = self.con.cursor()
-        self.cur.executescript(self.initDbSql)
-        
     def emptyDB(self,path):
         pass
         
     def connect(self,path):
-        if os.path.exists(path) == False:
-            self.initDB(path)
-            return
+        #判断之前是否存在,判断该返回值确定是否需要初始化库
+        exists = os.path.exists(path)
         self.con = sqlite3.connect(path, check_same_thread = False)
         self.cur = self.con.cursor()
+        return exists
     
     def initTestData(self):
         tps = [('reg1', '100500', 45.00),
@@ -86,10 +77,11 @@ class DbPorxy(object):
     instance = None
     path = None
     
-    def __init__(self,path):
+    def __init__(self,path,init_sql):
         print 'DbPorxy init,connect db.', path
         DbPorxy.path = path
-        self.db.connect(path)
+        if self.db.connect(path) == False:
+            self.db.executeSql(init_sql)
         
     def executeSql(self,sql):
         return self.db.executeSql(sql)
