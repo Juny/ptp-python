@@ -7,7 +7,7 @@ from common import WebServer
 #Agent
 def startServer(port=51999):
     parser = Parser.TransDataParser()
-    controler = Server.ControlServer("d:\TestByGJY.db")
+    controler = Server.ControlServer(r"D:\develop\ptpweb\db\trans.db")
     controler.setParser(parser)
     controler.start(port)
 
@@ -18,8 +18,8 @@ def startWebServer(port=8089):
     httpd.serve_forever()
     
 def startService(server_port, web_port):
-    thread.start_new_thread(startServer,(server_port))
-    thread.start_new_thread(startWebServer,(web_port))
+    thread.start_new_thread(startServer,(server_port,))
+    #thread.start_new_thread(startWebServer,(web_port,))
     input()
     
 if __name__ == '__main__':
